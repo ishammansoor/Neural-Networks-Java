@@ -13,14 +13,14 @@ public class Neuron {
             weights[i] = Math.random();
         }
         
-        bias = Math.random();
+        bias = Math.random() * 0.1;
     }
     
     public double activate(double[] inputs) {
         double sum = bias;
         
         for(int i = 0; i < weights.length; i++) {
-            sum += inputs[i] + weights[i];
+            sum += inputs[i] * weights[i];
         }
         
         output = sigmoid(sum);
