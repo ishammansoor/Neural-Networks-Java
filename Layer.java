@@ -1,6 +1,6 @@
 
 public class Layer {
-    private Neuron[] layer;
+    public Neuron[] layer;
     
 
     public Layer(int numNeurons, int inputSize) {
