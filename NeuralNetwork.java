@@ -52,50 +52,49 @@ public class NeuralNetwork {
     public void backward(double[] inputs, double[] output, double[] targets) {
         // made using notes from w3school
 
-        double[] outputDeltas = new double[outputLayer.layer.length];
-
-        for (int i = 0; i < outputDeltas.length; i++) {
+        for (int i = 0; i < outputLayer.layer.length; i++) {
             double error = targets[i] - output[i];
-            outputDeltas[i] = error * outputLayer.layer[i].sigmoidDerivative(
-                output[i]);
+            double totalError = error * (output[i] * (1 - output[i]));
+
+            outputLayer.layer[i].setDelta(totalError);
         }
 
-        double[][] hiddenDeltas = new double[hiddenLayers.length][];
-
-        for (int layer = hiddenLayers.length - 1; layer > 0; layer--) {
+        for (int layer = hiddenLayers.length - 1; layer >= 0; layer--) {
             Neuron[] neurons = hiddenLayers[layer].layer;
-            double[] deltas = new double[neurons.length];
 
             for (int n = 0; n < neurons.length; n++) {
-                if (layer == hiddenLayers.length - 1) {
-                    for (int o = 0; o < outputLayer.layer.length; o++) {
-                        double[] weights = outputLayer.layer[o].getWeights();
+                double deltaSum = 0.0;
 
-                        deltas[n] = neurons[n].sigmoidDerivative(neurons[n]
-                            .getOutput()) * (weights[o] * outputDeltas[o]);
+                if (layer == hiddenLayers.length - 1) {
+                    for (Neuron outputNeuron : outputLayer.layer) {
+                        deltaSum += outputNeuron.getWeights()[n] * outputNeuron
+                            .getDelta();
                     }
                 }
                 else {
-                    for (int o = 0; o < hiddenLayers[layer + 1].layer.length; o++) {
-                        double[] weights = hiddenLayers[layer + 1].layer[o].getWeights();
-                        deltas[n] += neurons[n].sigmoidDerivative(neurons[n].getOutput()) 
-                                    * weights[n] * hiddenDeltas[layer + 1][o];
+                    for (Neuron nextNeuron : hiddenLayers[layer + 1].layer) {
+                        deltaSum += nextNeuron.getWeights()[n] * nextNeuron
+                            .getDelta();
                     }
                 }
-                hiddenDeltas[layer] = deltas;
+
+                double delta = deltaSum * (neurons[n].getOutput() * (1
+                    - neurons[n].getOutput()));
+                neurons[n].setDelta(delta);
             }
         }
 
-        for (int i = 0; i < outputDeltas.length; i++) {
-            outputLayer.layer[i].updateWeights(0.01, outputDeltas[i]);
+        // Update weights for the output layer
+        for (Neuron neuron : outputLayer.layer) {
+            neuron.updateWeights(.9, neuron.getDelta());
         }
-        
-        for(int layer = hiddenLayers.length - 1; layer > 0; layer--) {
+
+        // Update weights for the hidden layers
+        for (int layer = hiddenLayers.length - 1; layer >= 0; layer--) {
             Neuron[] neurons = hiddenLayers[layer].layer;
-            double[] deltas = hiddenDeltas[layer];
-            
-            for(int n = 0; n < neurons.length; n++) {
-                neurons[n].updateWeights(0.01, deltas[n]);
+
+            for (Neuron neuron : neurons) {
+                neuron.updateWeights(.9, neuron.getDelta());
             }
         }
 
@@ -119,9 +118,8 @@ public class NeuralNetwork {
         };
 
         // Create and train the neural network
-        NeuralNetwork nn = new NeuralNetwork(2, 4, 1); // 2 inputs, 4 hidden
-                                                       // neurons, 1 output
-        nn.train(inputs, targets, 10000, 0.01);
+        NeuralNetwork nn = new NeuralNetwork(2, 4, 1); 
+        nn.train(inputs, targets, 50000, 1);
 
         // Test the network
         for (double[] input : inputs) {
